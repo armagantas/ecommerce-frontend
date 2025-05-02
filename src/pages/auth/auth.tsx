@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -11,22 +12,103 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { RegisterRequest, LoginRequest } from "@/types/user";
+import { authApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { ApiError } from "@/types/user";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    firstName: "",
+    lastName: "",
+    cityName: "",
+    countyName: "",
+    districtName: "",
+    addressText: "",
+  });
   const navigate = useNavigate();
+  const { setUser, setPendingUserId, setIsLoading, pendingUserId } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would handle authentication here
-    if (!isLogin) {
-      // For registration, navigate to OTP verification
-      navigate("/verify-otp");
-    } else {
-      // For login, navigate to home
-      navigate("/");
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        // Handle login
+        const loginData: LoginRequest = {
+          email: formData.email,
+          password: formData.password,
+        };
+
+        const response = await authApi.login(loginData);
+
+        if (response.success) {
+          // User is verified and logged in
+          if (response.data?.token) {
+            setUser(response.data);
+            toast.success("Login successful!");
+            navigate("/");
+          }
+        }
+      } else {
+        // Handle registration
+        // Validate password matching
+        if (formData.password !== formData.confirmPassword) {
+          toast.error("Passwords do not match!");
+          return;
+        }
+
+        const registerData: RegisterRequest = {
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          address: {
+            cityName: formData.cityName,
+            countyName: formData.countyName,
+            districtName: formData.districtName,
+            addressText: formData.addressText,
+          },
+        };
+
+        const response = await authApi.register(registerData);
+
+        if (response.success) {
+          toast.success("Registration successful! Please verify your email.");
+          setPendingUserId(response.data._id);
+          navigate("/verify-otp");
+        }
+      }
+    } catch (error) {
+      const apiError = error as ApiError;
+      toast.error(apiError.message || "An error occurred");
+
+      // Special case: if login fails due to unverified email
+      if (apiError.userId) {
+        setPendingUserId(apiError.userId);
+        toast.info("Please verify your email before logging in");
+        setTimeout(() => navigate("/verify-otp"), 2000);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  // If we already have a pendingUserId, redirect to verification
+  if (pendingUserId) {
+    navigate("/verify-otp");
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-gray-300 to-gray-800">
@@ -60,6 +142,8 @@ const Auth = () => {
                         type="text"
                         autoComplete="given-name"
                         required
+                        value={formData.firstName}
+                        onChange={handleChange}
                       />
                     </div>
                     <div className="space-y-2">
@@ -72,55 +156,74 @@ const Auth = () => {
                         type="text"
                         autoComplete="family-name"
                         required
+                        value={formData.lastName}
+                        onChange={handleChange}
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="city" className="text-sm font-medium">
+                    <label htmlFor="cityName" className="text-sm font-medium">
                       City
                     </label>
                     <Input
-                      id="city"
+                      id="cityName"
                       placeholder="New York"
                       type="text"
                       autoComplete="address-level2"
                       required
+                      value={formData.cityName}
+                      onChange={handleChange}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label htmlFor="county" className="text-sm font-medium">
+                      <label
+                        htmlFor="countyName"
+                        className="text-sm font-medium"
+                      >
                         County
                       </label>
                       <Input
-                        id="county"
+                        id="countyName"
                         placeholder="Manhattan"
                         type="text"
                         required
+                        value={formData.countyName}
+                        onChange={handleChange}
                       />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="district" className="text-sm font-medium">
+                      <label
+                        htmlFor="districtName"
+                        className="text-sm font-medium"
+                      >
                         District
                       </label>
                       <Input
-                        id="district"
+                        id="districtName"
                         placeholder="Midtown"
                         type="text"
                         required
+                        value={formData.districtName}
+                        onChange={handleChange}
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="address" className="text-sm font-medium">
+                    <label
+                      htmlFor="addressText"
+                      className="text-sm font-medium"
+                    >
                       Address
                     </label>
                     <Input
-                      id="address"
+                      id="addressText"
                       placeholder="123 Main St, Apt 4B"
                       type="text"
                       autoComplete="street-address"
                       required
+                      value={formData.addressText}
+                      onChange={handleChange}
                     />
                   </div>
                 </>
@@ -135,6 +238,8 @@ const Auth = () => {
                   type="email"
                   autoComplete="email"
                   required
+                  value={formData.email}
+                  onChange={handleChange}
                 />
               </div>
               <div className="space-y-2">
@@ -146,6 +251,8 @@ const Auth = () => {
                   type="password"
                   autoComplete={isLogin ? "current-password" : "new-password"}
                   required
+                  value={formData.password}
+                  onChange={handleChange}
                 />
               </div>
               {!isLogin && (
@@ -161,6 +268,8 @@ const Auth = () => {
                     type="password"
                     autoComplete="new-password"
                     required
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
                   />
                 </div>
               )}
@@ -175,6 +284,7 @@ const Auth = () => {
               <button
                 onClick={() => setIsLogin(!isLogin)}
                 className="ml-1 text-blue-600 hover:underline"
+                type="button"
               >
                 {isLogin ? "Sign up" : "Sign in"}
               </button>

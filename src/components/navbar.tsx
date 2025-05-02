@@ -8,8 +8,12 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import { useAuth } from "@/contexts/auth-context";
+import { Button } from "@/components/ui/button";
 
 const Navbar = () => {
+  const { user, logout } = useAuth();
+
   return (
     <header className="w-full py-4 px-6 border-b flex items-center justify-between">
       {/* Logo */}
@@ -85,11 +89,56 @@ const Navbar = () => {
 
       {/* Right side navigation */}
       <div className="flex items-center gap-4">
-        <Link to="/auth" className="hover:underline">
-          Register/Login
-        </Link>
+        {user ? (
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger>
+                  {user.firstName} {user.lastName}
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="flex flex-col w-[200px] p-4">
+                    <Link
+                      to="/account"
+                      className="p-2 hover:bg-slate-100 rounded-md"
+                    >
+                      My Account
+                    </Link>
+                    {user.isSeller ? (
+                      <Link
+                        to="/seller/dashboard"
+                        className="p-2 hover:bg-slate-100 rounded-md"
+                      >
+                        Seller Dashboard
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/be-seller"
+                        className="p-2 hover:bg-slate-100 rounded-md"
+                      >
+                        Become a Seller
+                      </Link>
+                    )}
+                    <Button
+                      variant="ghost"
+                      className="justify-start p-2 h-auto font-normal hover:bg-slate-100 hover:text-inherit rounded-md"
+                      onClick={logout}
+                    >
+                      Sign Out
+                    </Button>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        ) : (
+          <Link to="/auth" className="hover:underline">
+            Register/Login
+          </Link>
+        )}
         <Link to="/cart" className="flex items-center gap-1 hover:underline">
           <span>Cart</span>
+          <span>🛒</span>
         </Link>
       </div>
     </header>

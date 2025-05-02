@@ -8,26 +8,42 @@ import Categories from "./pages/categories/categories";
 import Favorites from "./pages/favorites/favorites";
 import Navbar from "./components/navbar";
 import VerifyOTP from "./pages/auth/verify-otp";
+import { AuthProvider, useAuth } from "./contexts/auth-context";
+import { Toaster } from "./components/ui/sonner";
+import { FullPageLoading } from "./components/ui/loading";
+
+// AppContent component to use hooks inside the BrowserRouter
+const AppContent = () => {
+  const { isLoading } = useAuth();
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <main className="flex-1">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/verify-otp" element={<VerifyOTP />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/be-seller" element={<BeSeller />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/favorites" element={<Favorites />} />
+        </Routes>
+      </main>
+      <Toaster />
+      {isLoading && <FullPageLoading />}
+    </div>
+  );
+};
 
 function App() {
   return (
-    <BrowserRouter>
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/verify-otp" element={<VerifyOTP />} />
-            <Route path="/account" element={<Account />} />
-            <Route path="/be-seller" element={<BeSeller />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/favorites" element={<Favorites />} />
-          </Routes>
-        </main>
-      </div>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -14,17 +15,67 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { authApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { ApiError } from "@/types/user";
 
 const VerifyOTP = () => {
   const [value, setValue] = useState("");
+  const [isResending, setIsResending] = useState(false);
   const navigate = useNavigate();
+  const { pendingUserId, setUser, setPendingUserId, setIsLoading } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // If no pendingUserId, redirect to auth
+  if (!pendingUserId) {
+    navigate("/auth");
+    return null;
+  }
+
+  const handleResend = async () => {
+    if (!pendingUserId) return;
+
+    setIsResending(true);
+    try {
+      const response = await authApi.resendVerification({
+        userId: pendingUserId,
+      });
+      if (response.success) {
+        toast.success(response.message || "Verification code resent");
+      }
+    } catch (error) {
+      const apiError = error as ApiError;
+      toast.error(apiError.message || "Failed to resend verification code");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would verify the OTP with your backend
-    if (value.length === 6) {
-      // For demo purposes, we'll just redirect to the home page
-      navigate("/");
+    if (value.length !== 6 || !pendingUserId) return;
+
+    setIsLoading(true);
+    try {
+      const response = await authApi.verifyEmail({
+        userId: pendingUserId,
+        verificationCode: value,
+      });
+
+      if (response.success) {
+        toast.success("Email verified successfully!");
+        // Store user data and token
+        setUser(response.data);
+        // Clear pending user id
+        setPendingUserId(null);
+        // Navigate to home
+        navigate("/");
+      }
+    } catch (error) {
+      const apiError = error as ApiError;
+      toast.error(apiError.message || "Failed to verify email");
+      setValue("");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -37,7 +88,7 @@ const VerifyOTP = () => {
               Verify Your Account
             </CardTitle>
             <CardDescription className="text-center">
-              Enter the 6-digit code sent to your email or phone number
+              Enter the 6-digit code sent to your email
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -60,8 +111,14 @@ const VerifyOTP = () => {
                 </InputOTP>
                 <p className="text-sm text-muted-foreground">
                   Didn't receive the code?{" "}
-                  <Button type="button" variant="link" className="p-0 h-auto">
-                    Resend
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="p-0 h-auto"
+                    onClick={handleResend}
+                    disabled={isResending}
+                  >
+                    {isResending ? "Sending..." : "Resend"}
                   </Button>
                 </p>
               </div>
