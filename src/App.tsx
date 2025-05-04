@@ -7,7 +7,6 @@ import Cart from "./pages/cart/cart";
 import Categories from "./pages/categories/categories";
 import Favorites from "./pages/favorites/favorites";
 import Navbar from "./components/navbar";
-import VerifyOTP from "./pages/auth/verify-otp";
 import { AuthProvider, useAuth } from "./contexts/auth-context";
 import { Toaster } from "./components/ui/sonner";
 import { FullPageLoading } from "./components/ui/loading";
@@ -23,7 +22,6 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/verify-otp" element={<VerifyOTP />} />
           <Route path="/account" element={<Account />} />
           <Route path="/be-seller" element={<BeSeller />} />
           <Route path="/cart" element={<Cart />} />

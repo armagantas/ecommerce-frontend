@@ -3,10 +3,8 @@ import { User } from "../types/user";
 
 interface AuthContextType {
   user: User | null;
-  pendingUserId: string | null;
   isLoading: boolean;
   setUser: (user: User | null) => void;
-  setPendingUserId: (id: string | null) => void;
   setIsLoading: (loading: boolean) => void;
   logout: () => void;
 }
@@ -17,7 +15,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // On mount, check if we have a token in localStorage
@@ -31,28 +28,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         localStorage.removeItem("user");
       }
     }
-
-    const storedPendingId = localStorage.getItem("pendingUserId");
-    if (storedPendingId) {
-      setPendingUserId(storedPendingId);
-    }
   }, []);
 
   // Save user to localStorage whenever it changes
   useEffect(() => {
     if (user) {
       localStorage.setItem("user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("user");
     }
   }, [user]);
-
-  // Save pendingUserId to localStorage whenever it changes
-  useEffect(() => {
-    if (pendingUserId) {
-      localStorage.setItem("pendingUserId", pendingUserId);
-    } else {
-      localStorage.removeItem("pendingUserId");
-    }
-  }, [pendingUserId]);
 
   const logout = () => {
     setUser(null);
@@ -63,10 +48,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     <AuthContext.Provider
       value={{
         user,
-        pendingUserId,
         isLoading,
         setUser,
-        setPendingUserId,
         setIsLoading,
         logout,
       }}

@@ -39,17 +39,6 @@ export interface RegisterResponse {
   data: User;
 }
 
-export interface VerifyEmailRequest {
-  userId: string;
-  verificationCode: string;
-}
-
-export interface VerifyEmailResponse {
-  success: boolean;
-  message: string;
-  data: User;
-}
-
 export interface LoginRequest {
   email: string;
   password: string;
@@ -59,20 +48,9 @@ export interface LoginResponse {
   success: boolean;
   message?: string;
   data?: User;
-  userId?: string;
-}
-
-export interface ResendVerificationRequest {
-  userId: string;
-}
-
-export interface ResendVerificationResponse {
-  success: boolean;
-  message: string;
 }
 
 export interface ApiError {
   success: false;
   message: string;
-  userId?: string;
 }

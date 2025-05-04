@@ -31,7 +31,7 @@ const Auth = () => {
     addressText: "",
   });
   const navigate = useNavigate();
-  const { setUser, setPendingUserId, setIsLoading, pendingUserId } = useAuth();
+  const { setUser, setIsLoading } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -53,7 +53,7 @@ const Auth = () => {
         const response = await authApi.login(loginData);
 
         if (response.success) {
-          // User is verified and logged in
+          // User is logged in
           if (response.data?.token) {
             setUser(response.data);
             toast.success("Login successful!");
@@ -84,31 +84,19 @@ const Auth = () => {
         const response = await authApi.register(registerData);
 
         if (response.success) {
-          toast.success("Registration successful! Please verify your email.");
-          setPendingUserId(response.data._id);
-          navigate("/verify-otp");
+          // Registration is successful and user is auto-logged in
+          setUser(response.data);
+          toast.success("Registration successful!");
+          navigate("/");
         }
       }
     } catch (error) {
       const apiError = error as ApiError;
       toast.error(apiError.message || "An error occurred");
-
-      // Special case: if login fails due to unverified email
-      if (apiError.userId) {
-        setPendingUserId(apiError.userId);
-        toast.info("Please verify your email before logging in");
-        setTimeout(() => navigate("/verify-otp"), 2000);
-      }
     } finally {
       setIsLoading(false);
     }
   };
-
-  // If we already have a pendingUserId, redirect to verification
-  if (pendingUserId) {
-    navigate("/verify-otp");
-    return null;
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-gray-300 to-gray-800">
