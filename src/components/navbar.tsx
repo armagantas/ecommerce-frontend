@@ -27,62 +27,37 @@ const Navbar = () => {
           <NavigationMenuItem>
             <Link to="/">
               <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                Home
+                Ana Sayfa
               </NavigationMenuLink>
             </Link>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <Link to="/categories">
+            <Link to="/my-offers">
               <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                Categories
+                Tekliflerim
+              </NavigationMenuLink>
+            </Link>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <Link to="/products">
+              <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                Ürünler
+              </NavigationMenuLink>
+            </Link>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <Link to="/create-request">
+              <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                Talep Oluştur
               </NavigationMenuLink>
             </Link>
           </NavigationMenuItem>
           <NavigationMenuItem>
             <Link to="/favorites">
               <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                Favorites
+                Favoriler
               </NavigationMenuLink>
             </Link>
-          </NavigationMenuItem>
-          <NavigationMenuItem>
-            <NavigationMenuTrigger>Products</NavigationMenuTrigger>
-            <NavigationMenuContent>
-              <div className="grid gap-3 p-6 w-[400px]">
-                <div className="grid grid-cols-2 gap-3">
-                  <Link
-                    to="/categories/electronics"
-                    className="p-2 hover:bg-slate-100 rounded-md"
-                  >
-                    Electronics
-                  </Link>
-                  <Link
-                    to="/categories/fashion"
-                    className="p-2 hover:bg-slate-100 rounded-md"
-                  >
-                    Fashion
-                  </Link>
-                  <Link
-                    to="/categories/home"
-                    className="p-2 hover:bg-slate-100 rounded-md"
-                  >
-                    Home & Garden
-                  </Link>
-                  <Link
-                    to="/categories/beauty"
-                    className="p-2 hover:bg-slate-100 rounded-md"
-                  >
-                    Beauty & Health
-                  </Link>
-                </div>
-                <Link
-                  to="/categories"
-                  className="p-2 mt-2 border-t pt-2 text-sm text-blue-600"
-                >
-                  View all categories
-                </Link>
-              </div>
-            </NavigationMenuContent>
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
@@ -102,21 +77,21 @@ const Navbar = () => {
                       to="/account"
                       className="p-2 hover:bg-slate-100 rounded-md"
                     >
-                      My Account
+                      Hesabım
                     </Link>
                     {user.isSeller ? (
                       <Link
                         to="/seller/dashboard"
                         className="p-2 hover:bg-slate-100 rounded-md"
                       >
-                        Seller Dashboard
+                        Satıcı Paneli
                       </Link>
                     ) : (
                       <Link
                         to="/be-seller"
                         className="p-2 hover:bg-slate-100 rounded-md"
                       >
-                        Become a Seller
+                        Satıcı Ol
                       </Link>
                     )}
                     <Button
@@ -124,7 +99,7 @@ const Navbar = () => {
                       className="justify-start p-2 h-auto font-normal hover:bg-slate-100 hover:text-inherit rounded-md"
                       onClick={logout}
                     >
-                      Sign Out
+                      Çıkış Yap
                     </Button>
                   </div>
                 </NavigationMenuContent>
@@ -133,13 +108,9 @@ const Navbar = () => {
           </NavigationMenu>
         ) : (
           <Link to="/auth" className="hover:underline">
-            Register/Login
+            Kayıt/Giriş
           </Link>
         )}
-        <Link to="/cart" className="flex items-center gap-1 hover:underline">
-          <span>Cart</span>
-          <span>🛒</span>
-        </Link>
       </div>
     </header>
   );

@@ -10,8 +10,11 @@ import Navbar from "./components/navbar";
 import { AuthProvider, useAuth } from "./contexts/auth-context";
 import { Toaster } from "./components/ui/sonner";
 import { FullPageLoading } from "./components/ui/loading";
+import Products from "./pages/products/products";
+import ProductDetail from "./pages/products/productDetail";
+import MyOffers from "./pages/my-offers/my-offers";
+import CreateRequestPage from "./pages/create-request";
 
-// AppContent component to use hooks inside the BrowserRouter
 const AppContent = () => {
   const { isLoading } = useAuth();
 
@@ -27,9 +30,13 @@ const AppContent = () => {
           <Route path="/cart" element={<Cart />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/favorites" element={<Favorites />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/products/:id" element={<ProductDetail />} />
+          <Route path="/my-offers" element={<MyOffers />} />
+          <Route path="/create-request" element={<CreateRequestPage />} />
         </Routes>
       </main>
-      <Toaster />
+      <Toaster position="bottom-right" />
       {isLoading && <FullPageLoading />}
     </div>
   );
