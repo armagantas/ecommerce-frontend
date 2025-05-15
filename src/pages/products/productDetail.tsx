@@ -4,26 +4,28 @@ import { Loading } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, ArrowLeft, Check, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
-
-import { mockProducts } from "./products";
+import { productService } from "@/services/api";
+import { toast } from "sonner";
 
 interface Product {
-  id: string;
-  title: string;
-  description: string;
-  count: number;
-  image: string;
+  ID: number;
+  Title: string;
+  Description: string;
+  CategoryID: number;
   category: {
     id: number;
     name: string;
-    slug: string;
+    createdAt: string;
+    updatedAt: string;
   };
-  user: {
-    _id: string;
-    username: string;
-  };
-  created_at: string;
-  updated_at: string;
+  UserID: string;
+  Username: string;
+  Quantity: number;
+  Price: number;
+  Image: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  DeletedAt: any;
 }
 
 interface Offer {
@@ -36,8 +38,29 @@ interface Offer {
   created_at: string;
 }
 
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("tr-TR");
+};
+
+// Kategori bazlı ürün resimleri için örnek görseller
+const getFallbackImage = (categoryID: number) => {
+  const fallbackImages = {
+    1: "https://cdn.pixabay.com/photo/2014/08/05/10/30/iphone-410324_1280.jpg", // Elektronik
+    2: "https://cdn.pixabay.com/photo/2014/11/17/13/17/crossfit-534615_1280.jpg", // Spor
+    3: "https://cdn.pixabay.com/photo/2017/09/09/18/25/living-room-2732939_1280.jpg", // Ev & Bahçe
+    default:
+      "https://cdn.pixabay.com/photo/2015/01/08/18/25/desk-593327_1280.jpg", // Varsayılan
+  };
+
+  return (
+    fallbackImages[categoryID as keyof typeof fallbackImages] ||
+    fallbackImages.default
+  );
+};
+
 const obscureUsername = (username: string) => {
-  if (username.length <= 5) return username;
+  if (!username || username.length <= 5) return username || "Anonim";
   return `${username.substring(0, 3)}...${username.substring(
     username.length - 2
   )}`;
@@ -49,103 +72,32 @@ const ProductDetail = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
   const { user } = useAuth();
+  const [imageError, setImageError] = useState(false);
 
-  const isProductRequester = user?._id === product?.user._id;
+  const isProductRequester = user?._id === product?.UserID;
 
   useEffect(() => {
     const fetchProductDetail = async () => {
       try {
         setIsLoading(true);
 
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        if (!id) return;
 
-        const foundProduct = mockProducts.find((p: any) => p.id === id);
+        const response = await productService.getProductById(id);
 
-        if (foundProduct) {
-          setProduct({
-            ...foundProduct,
-            created_at: "2023-05-09 01:39:14",
-            updated_at: "2023-05-09 01:39:14",
-          });
+        if (response.success && response.data) {
+          setProduct(response.data);
 
-          const mockOffersByProduct: Record<string, Offer[]> = {
-            "1": [
-              {
-                id: "101",
-                user: { _id: "2", username: "armagantas" },
-                amount: 5000,
-                created_at: "2023-05-10 14:23:45",
-              },
-              {
-                id: "102",
-                user: { _id: "3", username: "mehmetcan" },
-                amount: 4800,
-                created_at: "2023-05-10 15:45:12",
-              },
-              {
-                id: "103",
-                user: { _id: "4", username: "ayşeyilmaz" },
-                amount: 5200,
-                created_at: "2023-05-11 09:18:32",
-              },
-            ],
-            "2": [
-              {
-                id: "201",
-                user: { _id: "5", username: "canerbey" },
-                amount: 7500,
-                created_at: "2023-05-09 11:13:45",
-              },
-              {
-                id: "202",
-                user: { _id: "6", username: "denizalp" },
-                amount: 7200,
-                created_at: "2023-05-09 13:25:19",
-              },
-            ],
-            "3": [
-              {
-                id: "301",
-                user: { _id: "7", username: "serhatgunes" },
-                amount: 1200,
-                created_at: "2023-05-10 09:13:22",
-              },
-            ],
-            "4": [
-              {
-                id: "401",
-                user: { _id: "2", username: "armagantas" },
-                amount: 3500,
-                created_at: "2023-05-08 17:45:33",
-              },
-              {
-                id: "402",
-                user: { _id: "8", username: "cemileaydin" },
-                amount: 3800,
-                created_at: "2023-05-08 18:12:55",
-              },
-              {
-                id: "403",
-                user: { _id: "3", username: "mehmetcan" },
-                amount: 3600,
-                created_at: "2023-05-08 20:05:11",
-              },
-              {
-                id: "404",
-                user: { _id: "9", username: "elifkaya" },
-                amount: 4000,
-                created_at: "2023-05-09 08:33:21",
-              },
-            ],
-          };
-
-          setOffers(mockOffersByProduct[foundProduct.id] || []);
+          // Burada normalde API'den teklifler de gelebilir
+          // Eğer API'den gelmiyorsa mock data kullanabilirsiniz
+          // Şimdilik boş bir dizi olarak ayarlıyoruz
+          setOffers([]);
         } else {
-          console.error(`Ürün ID'si ${id} ile bulunamadı`);
-          setProduct(null);
+          toast.error("Ürün detayları yüklenirken hata oluştu");
         }
       } catch (error) {
         console.error("Ürün detayları yüklenirken hata oluştu:", error);
+        toast.error("Ürün detayları yüklenirken hata oluştu");
         setProduct(null);
       } finally {
         setIsLoading(false);
@@ -174,6 +126,19 @@ const ProductDetail = () => {
     );
   }
 
+  // Ürün resmi geçerli bir URL mi kontrol et
+  const isValidImageUrl =
+    product.Image &&
+    (product.Image.startsWith("http://") ||
+      product.Image.startsWith("https://") ||
+      product.Image.startsWith("/"));
+
+  // Geçerli değilse veya hata olduysa kategori bazlı fallback kullan
+  const imageUrl =
+    isValidImageUrl && !imageError
+      ? product.Image
+      : getFallbackImage(product.CategoryID);
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-4">
@@ -191,26 +156,37 @@ const ProductDetail = () => {
           <div className="border rounded-md bg-white shadow-sm overflow-hidden">
             <div className="p-6">
               <h1 className="text-2xl font-bold text-center">
-                {product.title}
+                {product.Title}
               </h1>
               <div className="text-sm text-center text-gray-500 mt-1 mb-6">
-                İsteyen: {product.user.username}
+                {product.Username
+                  ? `İsteyen: ${product.Username}`
+                  : `Ürün ID: ${product.ID}`}
               </div>
 
               <div className="mb-6 relative">
                 <img
-                  src={product.image}
-                  alt={product.title}
+                  src={imageUrl}
+                  alt={product.Title}
                   className="w-full h-auto object-cover rounded-md"
+                  onError={(e) => {
+                    setImageError(true);
+                    const target = e.target as HTMLImageElement;
+                    target.onerror = null;
+                    target.src = getFallbackImage(product.CategoryID);
+                  }}
                 />
                 <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-md text-xs font-medium shadow-sm">
-                  {product.category.name}
+                  {product.category?.name || `Kategori ${product.CategoryID}`}
+                </div>
+                <div className="absolute bottom-2 right-2 bg-black text-white px-3 py-1 rounded-md text-sm font-medium shadow-sm">
+                  {product.Price.toLocaleString("tr-TR")} ₺
                 </div>
               </div>
 
               <div className="mb-6">
                 <h2 className="text-sm text-gray-500 mb-1">Açıklama</h2>
-                <p>{product.description}</p>
+                <p>{product.Description}</p>
               </div>
 
               <div className="bg-gray-50 rounded-md p-4">
@@ -218,30 +194,40 @@ const ProductDetail = () => {
 
                 <div className="grid grid-cols-2 gap-y-4">
                   <div>
+                    <h3 className="text-sm text-gray-500">Fiyat</h3>
+                    <p className="font-semibold">
+                      {product.Price.toLocaleString("tr-TR")} ₺
+                    </p>
+                  </div>
+
+                  <div>
                     <h3 className="text-sm text-gray-500">İstenen Adet</h3>
-                    <p>{product.count}</p>
+                    <p>{product.Quantity}</p>
                   </div>
 
                   <div>
                     <h3 className="text-sm text-gray-500">Kategori</h3>
-                    <p>{product.category.name}</p>
+                    <p>
+                      {product.category?.name ||
+                        `Kategori ${product.CategoryID}`}
+                    </p>
                   </div>
 
                   <div>
                     <h3 className="text-sm text-gray-500">Ürün ID</h3>
-                    <p>{product.id}</p>
+                    <p>{product.ID}</p>
                   </div>
 
                   <div>
                     <h3 className="text-sm text-gray-500">
                       Oluşturulma Tarihi
                     </h3>
-                    <p>{product.created_at}</p>
+                    <p>{formatDate(product.CreatedAt)}</p>
                   </div>
 
                   <div>
                     <h3 className="text-sm text-gray-500">Güncelleme Tarihi</h3>
-                    <p>{product.updated_at}</p>
+                    <p>{formatDate(product.UpdatedAt)}</p>
                   </div>
                 </div>
               </div>

@@ -2,97 +2,29 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "@/components/product-card";
 import { Loading } from "@/components/ui/loading";
+import { productService } from "@/services/api";
+import { toast } from "sonner";
 
 interface Product {
-  id: string;
-  title: string;
-  description: string;
-  count: number;
-  image: string;
+  ID: number;
+  Title: string;
+  Description: string;
+  CategoryID: number;
   category: {
     id: number;
     name: string;
-    slug: string;
+    createdAt: string;
+    updatedAt: string;
   };
-  user: {
-    _id: string;
-    username: string;
-  };
+  UserID: string;
+  Username: string;
+  Quantity: number;
+  Price: number;
+  Image: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  DeletedAt: any;
 }
-
-export const mockProducts = [
-  {
-    id: "1",
-    title: "Wireless Headphones",
-    description:
-      "High-quality wireless headphones with noise cancellation and long battery life.",
-    count: 1,
-    price: 1500,
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e",
-    category: {
-      id: 1,
-      name: "Elektronik",
-      slug: "electronics",
-    },
-    user: {
-      _id: "1",
-      username: "johndoe",
-    },
-  },
-  {
-    id: "2",
-    title: "Smartwatch",
-    description:
-      "Modern smartwatch with health tracking, notifications and various apps.",
-    count: 1,
-    price: 2500,
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30",
-    category: {
-      id: 1,
-      name: "Elektronik",
-      slug: "electronics",
-    },
-    user: {
-      _id: "1",
-      username: "johndoe",
-    },
-  },
-  {
-    id: "3",
-    title: "Running Shoes",
-    description:
-      "Comfortable running shoes with cushioned sole and breathable material.",
-    count: 1,
-    price: 850,
-    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff",
-    category: {
-      id: 2,
-      name: "Spor & Outdoor",
-      slug: "sports-outdoor",
-    },
-    user: {
-      _id: "2",
-      username: "alicesmith",
-    },
-  },
-  {
-    id: "4",
-    title: "Modern Sofa",
-    description: "Elegant and comfortable sofa for your living room.",
-    count: 1,
-    price: 5000,
-    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc",
-    category: {
-      id: 3,
-      name: "Ev & Bahçe",
-      slug: "home-garden",
-    },
-    user: {
-      _id: "3",
-      username: "bobwilson",
-    },
-  },
-];
 
 const ProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -103,18 +35,18 @@ const ProductsPage = () => {
     const fetchProducts = async () => {
       try {
         setIsLoading(true);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const response = await productService.getAllProducts(
+          selectedCategory || undefined
+        );
 
-        if (selectedCategory) {
-          const filtered = mockProducts.filter(
-            (product) => product.category.slug === selectedCategory
-          );
-          setProducts(filtered);
+        if (response.success) {
+          setProducts(response.data || []);
         } else {
-          setProducts(mockProducts);
+          toast.error("Ürünler yüklenirken hata oluştu");
         }
       } catch (error) {
         console.error("Error fetching products:", error);
+        toast.error("Ürünler yüklenirken hata oluştu");
       } finally {
         setIsLoading(false);
       }
@@ -132,13 +64,13 @@ const ProductsPage = () => {
   }
 
   return (
-    <div className="container py-8">
+    <div className="max-w-7xl mx-auto px-6 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Tüm Ürünler</h1>
         <div className="space-x-2">
           <button
             onClick={() => setSelectedCategory(null)}
-            className={`px-3 py-1 rounded-md ${
+            className={`px-4 py-2 rounded-md text-base ${
               selectedCategory === null ? "bg-black text-white" : "bg-gray-100"
             }`}
           >
@@ -146,7 +78,7 @@ const ProductsPage = () => {
           </button>
           <button
             onClick={() => setSelectedCategory("electronics")}
-            className={`px-3 py-1 rounded-md ${
+            className={`px-4 py-2 rounded-md text-base ${
               selectedCategory === "electronics"
                 ? "bg-black text-white"
                 : "bg-gray-100"
@@ -156,7 +88,7 @@ const ProductsPage = () => {
           </button>
           <button
             onClick={() => setSelectedCategory("sports-outdoor")}
-            className={`px-3 py-1 rounded-md ${
+            className={`px-4 py-2 rounded-md text-base ${
               selectedCategory === "sports-outdoor"
                 ? "bg-black text-white"
                 : "bg-gray-100"
@@ -166,7 +98,7 @@ const ProductsPage = () => {
           </button>
           <button
             onClick={() => setSelectedCategory("home-garden")}
-            className={`px-3 py-1 rounded-md ${
+            className={`px-4 py-2 rounded-md text-base ${
               selectedCategory === "home-garden"
                 ? "bg-black text-white"
                 : "bg-gray-100"
@@ -185,9 +117,9 @@ const ProductsPage = () => {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-4">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.ID} product={product} />
           ))}
         </div>
       )}
