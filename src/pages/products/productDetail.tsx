@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Loading } from "@/components/ui/loading";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, ArrowLeft, Check, Lock } from "lucide-react";
+import { MessageCircle, ArrowLeft, Check, Lock, X } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { productService } from "@/services/api";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Product {
   ID: number;
@@ -68,11 +79,15 @@ const obscureUsername = (username: string) => {
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [product, setProduct] = useState<Product | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
   const { user } = useAuth();
   const [imageError, setImageError] = useState(false);
+  const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
+  const [offerAmount, setOfferAmount] = useState<string>("");
+  const [isSubmittingOffer, setIsSubmittingOffer] = useState(false);
 
   const isProductRequester = user?._id === product?.UserID;
 
@@ -87,11 +102,22 @@ const ProductDetail = () => {
 
         if (response.success && response.data) {
           setProduct(response.data);
+          console.log("Ürün detayları yüklendi:", response.data);
 
-          // Burada normalde API'den teklifler de gelebilir
-          // Eğer API'den gelmiyorsa mock data kullanabilirsiniz
-          // Şimdilik boş bir dizi olarak ayarlıyoruz
-          setOffers([]);
+          // Teklifleri yüklemeyi dene - ürün sahibinin tekliflerini al
+          if (user && response.data.UserID) {
+            try {
+              const offersResponse = await productService.getOffersByProductId(
+                response.data.UserID
+              );
+              if (offersResponse.success) {
+                setOffers(offersResponse.data || []);
+                console.log("Teklifler yüklendi:", offersResponse.data);
+              }
+            } catch (error) {
+              console.error("Teklifler yüklenirken hata oluştu:", error);
+            }
+          }
         } else {
           toast.error("Ürün detayları yüklenirken hata oluştu");
         }
@@ -105,7 +131,87 @@ const ProductDetail = () => {
     };
 
     fetchProductDetail();
-  }, [id]);
+  }, [id, user]);
+
+  const handleOpenOfferDialog = () => {
+    if (!user) {
+      toast.error("Teklif vermek için giriş yapmalısınız");
+      navigate("/auth");
+      return;
+    }
+    setIsOfferDialogOpen(true);
+    // Başlangıç için ürün fiyatının %90'ını önerilen teklif olarak sunabilirsiniz
+    const suggestedPrice = product ? Math.floor(product.Price * 0.9) : 0;
+    setOfferAmount(suggestedPrice.toString());
+  };
+
+  const handleSubmitOffer = async () => {
+    if (!product) return;
+
+    // Kullanıcı giriş yapmamışsa
+    if (!user || !user._id) {
+      toast.error("Teklif vermek için giriş yapmalısınız");
+      setIsOfferDialogOpen(false);
+      navigate("/auth");
+      return;
+    }
+
+    // Miktar kontrolü
+    const amount = parseFloat(offerAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Lütfen geçerli bir teklif miktarı girin");
+      return;
+    }
+
+    try {
+      setIsSubmittingOffer(true);
+      console.log("Teklif gönderiliyor:", {
+        productId: product.ID,
+        amount,
+      });
+
+      const response = await productService.createOffer(product.ID, amount);
+      console.log("Teklif yanıtı:", response);
+
+      if (response.success) {
+        toast.success("Teklifiniz başarıyla gönderildi");
+        setIsOfferDialogOpen(false);
+
+        // Örnek bir teklif oluşturalım (ön gösterim için)
+        const newOffer: Offer = {
+          id: Date.now().toString(),
+          user: {
+            _id: user._id,
+            username: user.firstName + " " + user.lastName,
+          },
+          amount: amount,
+          created_at: new Date().toISOString(),
+        };
+
+        // Önyüzde göstermek için hemen ekleyelim
+        setOffers((prev) => [...prev, newOffer]);
+
+        // Ürün sahibinin userId'si ile teklifleri tekrar yükleyelim
+        if (product.UserID) {
+          try {
+            const offersResponse = await productService.getOffersByProductId(
+              product.UserID
+            );
+            if (offersResponse.success && offersResponse.data) {
+              setOffers(offersResponse.data);
+            }
+          } catch (fetchError) {
+            console.error("Teklifler yüklenirken hata oluştu:", fetchError);
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error("Teklif hatası:", error);
+      toast.error(error.message || "Teklif gönderilirken bir hata oluştu");
+    } finally {
+      setIsSubmittingOffer(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -283,15 +389,78 @@ const ProductDetail = () => {
               )}
 
               <div className="mt-6">
-                <Button className="w-full bg-black hover:bg-gray-800 text-white">
+                <Button
+                  className="w-full bg-black hover:bg-gray-800 text-white"
+                  onClick={handleOpenOfferDialog}
+                  disabled={isProductRequester}
+                >
                   <MessageCircle className="mr-2 h-4 w-4" />
                   Teklif Ver
                 </Button>
+                {isProductRequester && (
+                  <p className="text-xs text-center mt-2 text-gray-500">
+                    Kendi ürününüze teklif veremezsiniz
+                  </p>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <Dialog open={isOfferDialogOpen} onOpenChange={setIsOfferDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Teklif Ver</DialogTitle>
+            <DialogDescription>
+              {product?.Title} için teklif miktarını girin
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="offerAmount">Teklif Miktarı (₺)</Label>
+              <Input
+                id="offerAmount"
+                type="number"
+                step="0.01"
+                min="1"
+                value={offerAmount}
+                onChange={(e) => setOfferAmount(e.target.value)}
+                placeholder="Teklif miktarını girin"
+              />
+            </div>
+
+            <div className="flex justify-between items-center text-sm">
+              <span>Ürün Fiyatı:</span>
+              <span className="font-semibold">
+                {product?.Price?.toLocaleString("tr-TR")} ₺
+              </span>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={isSubmittingOffer}>
+                <X className="mr-2 h-4 w-4" /> Vazgeç
+              </Button>
+            </DialogClose>
+            <Button
+              onClick={handleSubmitOffer}
+              disabled={isSubmittingOffer}
+              className="bg-black hover:bg-gray-800 text-white"
+            >
+              {isSubmittingOffer ? (
+                <Loading size="sm" />
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" /> Teklif Gönder
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

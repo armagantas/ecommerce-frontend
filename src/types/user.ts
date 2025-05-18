@@ -54,3 +54,21 @@ export interface ApiError {
   success: false;
   message: string;
 }
+
+// Teklif istekleri ve yanıtları için tipler
+export interface CreateOfferRequest {
+  productId: number;
+  amount: number;
+}
+
+export interface CreateOfferResponse {
+  success: boolean;
+  message?: string;
+  data?: any;
+}
+
+export interface GetOffersResponse {
+  success: boolean;
+  message?: string;
+  data?: any[];
+}

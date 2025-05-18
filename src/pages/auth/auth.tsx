@@ -16,6 +16,7 @@ import { RegisterRequest, LoginRequest } from "@/types/user";
 import { authApi } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { ApiError } from "@/types/user";
+import { authService } from "@/services/api";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -55,6 +56,8 @@ const Auth = () => {
         if (response.success) {
           // User is logged in
           if (response.data?.token) {
+            // Set the token in authService
+            authService.setToken(response.data.token);
             setUser(response.data);
             toast.success("Login successful!");
             navigate("/");
@@ -85,6 +88,10 @@ const Auth = () => {
 
         if (response.success) {
           // Registration is successful and user is auto-logged in
+          if (response.data?.token) {
+            // Set the token in authService
+            authService.setToken(response.data.token);
+          }
           setUser(response.data);
           toast.success("Registration successful!");
           navigate("/");

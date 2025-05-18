@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User } from "../types/user";
+import { authService } from "@/services/api";
 
 interface AuthContextType {
   user: User | null;
@@ -34,14 +35,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (user) {
       localStorage.setItem("user", JSON.stringify(user));
+      // Set the token in authService when user data is updated
+      if (user.token) {
+        authService.setToken(user.token);
+      }
     } else {
       localStorage.removeItem("user");
+      // Clear the token in authService when user is logged out
+      authService.clearToken();
     }
   }, [user]);
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
+    // Clear the token in authService when logout is called
+    authService.clearToken();
   };
 
   return (

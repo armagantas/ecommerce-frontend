@@ -14,9 +14,19 @@ import Products from "./pages/products/products";
 import ProductDetail from "./pages/products/productDetail";
 import MyOffers from "./pages/my-offers/my-offers";
 import CreateRequestPage from "./pages/create-request";
+import { authService } from "./services/api";
+import { useEffect } from "react";
 
 const AppContent = () => {
-  const { isLoading } = useAuth();
+  const { isLoading, user } = useAuth();
+
+  // Kullanıcı giriş yapılıysa token'ı ayarla
+  useEffect(() => {
+    if (user?.token) {
+      authService.setToken(user.token);
+      console.log("App: Token set from user data");
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -41,6 +51,9 @@ const AppContent = () => {
     </div>
   );
 };
+
+// Uygulama başlangıcında localStorage'dan token'ı yükle
+authService.getToken();
 
 function App() {
   return (
